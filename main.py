@@ -475,21 +475,26 @@ class KiCadNets:
                     ref = comp[1][1]
                     value = comp[2][1]
                     footprint = comp[3][1].split(':')[1]
+                    precision = ''
+                    for field in comp:
+                        if type(field) == list and len(title) == 3 and field[0] == Symbol('property'):
+                            if field[1][1] == 'Precision' and field[2][0] == Symbol('value'):
+                                precision = str(field[2][1])
 
                     match = re.match(r'^C[0-9].*$', ref)
                     if match != None:
                         ref = match.group(0)
-                        self.add_componet(self.components['C']['elements'], ref, value, footprint)
+                        self.add_componet(self.components['C']['elements'], ref, value, footprint, precision=precision)
 
                     match = re.match(r'^R[0-9].*$', ref)
                     if match != None:
                         ref = match.group(0)
-                        self.add_componet(self.components['R']['elements'], ref, value, footprint)
+                        self.add_componet(self.components['R']['elements'], ref, value, footprint, precision=precision)
 
                     match = re.match(r'^RP[0-9].*$', ref)
                     if match != None:
                         ref = match.group(0)
-                        self.add_componet(self.components['RP']['elements'], ref, value, footprint)
+                        self.add_componet(self.components['RP']['elements'], ref, value, footprint, precision=precision)
 
                     match = re.match(r'^BQ[0-9].*$', ref)
                     if match != None:
@@ -579,7 +584,7 @@ class KiCadNets:
                 self.components[key]['elements'][idx]['refs'] = refs_sorted
                 self.total_lines += len(refs_sorted) # Fix
 
-    def add_componet(self, arr, ref, value, footprint):
+    def add_componet(self, arr, ref, value, footprint, precision=''):
         found = False
         for comp in arr:
             if comp['value'] == value and comp['footprint'] == footprint:
@@ -587,7 +592,7 @@ class KiCadNets:
                 found = True
                 break
         if found == False:
-            arr.append({'value' : value, 'refs'  : [ref], 'footprint' : footprint})
+            arr.append({'value' : value, 'refs'  : [ref], 'footprint' : footprint, 'precision' : precision})
 
 
 
@@ -615,7 +620,10 @@ if __name__ == '__main__':
                 pdf.add_components_header(header=value['name'])
                 for comp in value['elements']:
                     for ref in comp['refs']:
-                        pdf.add_component( ref[0] , comp['value'] + ', ' + comp['footprint'], ref[1], "")
+                        title = comp['value']
+                        title += ', ' + comp['precision'] if comp['precision'] else ''
+                        title += ', ' + comp['footprint']
+                        pdf.add_component( ref[0], title, ref[1], "")
 
         pdf.save()
     except:
