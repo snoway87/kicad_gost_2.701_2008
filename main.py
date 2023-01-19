@@ -1,3 +1,5 @@
+import sys
+import os
 import re
 import datetime
 from fpdf import FPDF
@@ -392,8 +394,8 @@ class PDF:
 
 
 class KiCadNets:
-    def __init__(self, net_file="Mainboard.net"):
-        self.net_file = net_file
+    def __init__(self, kicad_nets_file="Mainboard.net"):
+        self.kicad_nets_file = kicad_nets_file
         self.engineer_title = ""
         self.checker_title = ""
         self.approver_title = ""
@@ -421,7 +423,7 @@ class KiCadNets:
         self.total_lines = len(self.components) * 2 - 1
 
     def parse(self):
-        with open(self.net_file, 'r') as f:
+        with open(self.kicad_nets_file, 'r') as f:
             nets = loads(f.read())
 
             if nets[2][0] != Symbol('design'):
@@ -598,9 +600,12 @@ class KiCadNets:
 
 
 if __name__ == '__main__':
-
-    nets = KiCadNets()
+    kicad_nets_file = sys.argv[1]
     try:
+        if not os.path.isfile(kicad_nets_file):
+            raise Exception(kicad_nets_file + ': file not found')
+
+        nets = KiCadNets(kicad_nets_file=kicad_nets_file)
         nets.parse()
         total_pages = (nets.total_lines - PDF.FIRST_PAGE_LINES) // PDF.OTHER_PAGE_LINES + int((nets.total_lines - PDF.FIRST_PAGE_LINES) % PDF.OTHER_PAGE_LINES > 0) + 1
         pdf = PDF(
@@ -612,6 +617,7 @@ if __name__ == '__main__':
             engineer_title=nets.engineer_title,
             checker_title=nets.checker_title,
             approver_title=nets.approver_title,
+            output_file=kicad_nets_file.replace(".net", ".pdf"),
             total_pages=total_pages)
         # Sort keys by alphabet
         for key in sorted(nets.components.keys()):
